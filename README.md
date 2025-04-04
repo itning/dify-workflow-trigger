@@ -90,3 +90,56 @@ example:
 - `TZ=Asia/Shanghai 0 30 8 * * *` run at 18:30 every day (timezone: Asia/Shanghai)
 - `0 0 18 * * *` run at 18:00 every day (default timezone)
 - `*/5 * * * * *` run every 5 seconds (default timezone)
+
+<details>
+
+<summary>About Body</summary>
+
+### Request Body
+`inputs` (object) Required Allows the entry of various variable values defined by the App. 
+
+The `inputs` parameter contains multiple key/value pairs, with each key corresponding to a specific variable and each value being the specific value for that variable. The workflow application requires at least one key/value pair to be inputted. The variable can be of File Array type. File Array type variable is suitable for inputting files combined with text understanding and answering questions, available only when the model supports file parsing and understanding capability. If the variable is of File Array type, the corresponding value should be a list whose elements contain following attributions:
+
+`type` (string) Supported type:
+
+`document` ('TXT', 'MD', 'MARKDOWN', 'PDF', 'HTML', 'XLSX', 'XLS', 'DOCX', 'CSV', 'EML', 'MSG', 'PPTX', 'PPT', 'XML', 'EPUB')
+
+`image` ('JPG', 'JPEG', 'PNG', 'GIF', 'WEBP', 'SVG')
+
+`audio` ('MP3', 'M4A', 'WAV', 'WEBM', 'AMR')
+
+`video` ('MP4', 'MOV', 'MPEG', 'MPGA')
+
+`custom` (Other file types)
+
+`transfer_method` (string) Transfer method, `remote_url` for image URL / `local_file` for file upload
+
+`url` (string) Image URL (when the transfer method is `remote_url`)
+
+`upload_file_id` (string) Uploaded file ID, which must be obtained by uploading through the File Upload API in advance (when the transfer method is local_file)
+
+`response_mode` (string) Required The mode of response return, supporting:
+
+`streaming` Streaming mode (recommended), implements a typewriter-like output through SSE (Server-Sent Events).
+
+`blocking` Blocking mode, returns result after execution is complete. (Requests may be interrupted if the process is long) Due to Cloudflare restrictions, the request will be interrupted without a return after 100 seconds.
+
+`user` (string) Required User identifier, used to define the identity of the end-user for retrieval and statistics. Should be uniquely defined by the developer within the application.
+
+Example: file array as an input variable
+```json
+{
+  "inputs": {
+    "{variable_name}": 
+    [
+      {
+      "transfer_method": "local_file",
+      "upload_file_id": "{upload_file_id}",
+      "type": "{document_type}"
+      }
+    ]
+  }
+}
+```
+
+</details>
