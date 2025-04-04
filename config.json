@@ -1,0 +1,14 @@
+[
+  {
+    "name": "workflow-1",
+    "cron": "*/30 * * * * ?",
+    "url": "https://dify.itning.cn/v1/workflows/run",
+    "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
+    "body": {
+      "inputs": {
+      },
+      "response_mode": "streaming",
+      "user": "dify-workflow-trigger"
+    }
+  }
+]

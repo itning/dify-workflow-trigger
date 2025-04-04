@@ -1,0 +1,4 @@
+.idea/
+*.exe
+.gitignore
+config.json
