@@ -51,17 +51,29 @@ docker run --name dify-workflow-trigger \
 
 ```json
 [
-  {
-    "name": "workflow-1",
-    "cron": "*/30 * * * * ?",
-    "url": "https://dify.itning.cn/v1/workflows/run",
-    "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
-    "body": {
-      "inputs": {
-      },
-      "response_mode": "streaming",
-      "user": "dify-workflow-trigger"
-    }
-  }
+   {
+      "name": "test1",
+      "cron": "TZ=Asia/Shanghai 0 0 18 * * *",
+      "url": "https://dify.itning.cn/v1/workflows/run",
+      "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
+      "body": {
+         "inputs": {
+         },
+         "response_mode": "streaming",
+         "user": "dify-workflow-trigger"
+      }
+   },
+   {
+      "name": "test2",
+      "cron": "TZ=Asia/Shanghai 0 30 8 * * *",
+      "url": "https://dify.itning.cn/v1/workflows/run",
+      "token": "app-LoFN2hiaYCMfTIhN8yCDmWmo",
+      "body": {
+         "inputs": {
+         },
+         "response_mode": "streaming",
+         "user": "dify-workflow-trigger"
+      }
+   }
 ]
 ```
