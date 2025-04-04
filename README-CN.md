@@ -21,25 +21,25 @@
 
 ---
 
-# Introduction
+# 简介
 
-Supports triggering Dify workflow execution via CRON scheduled tasks.
+支持定时任务CRON触发Dify工作流执行。
 
-Supports multiple tasks with different schedules invoking different workflows.
+支持多个任务不同时间不同任务调用
 
 ![preview](./pic/preview.png)
 
-# Usage
+# 使用
 
-## Using Binary File
+## 使用二进制文件
 
-1. [Download the latest version](https://github.com/itning/dify-workflow-trigger/releases)
-2. Execute
+1. [下载最新版本](https://github.com/itning/dify-workflow-trigger/releases)
+2. 执行
     ```shell
     ./dify-workflow-trigger -config config.json
     ```
-
-## Using Docker
+   
+## 使用Docker
 
 ```shell
 docker run --name dify-workflow-trigger \
@@ -47,21 +47,21 @@ docker run --name dify-workflow-trigger \
     -d itning/dify-workflow-trigger:latest
 ```
 
-# Configuration `config.json`
+# 配置 config.json
 
 ```json
 [
-   {
-      "name": "workflow-1",
-      "cron": "*/30 * * * * ?",
-      "url": "https://dify.itning.cn/v1/workflows/run",
-      "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
-      "body": {
-         "inputs": {
-         },
-         "response_mode": "streaming",
-         "user": "dify-workflow-trigger"
-      }
-   }
+  {
+    "name": "workflow-1",
+    "cron": "*/30 * * * * ?",
+    "url": "https://dify.itning.cn/v1/workflows/run",
+    "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
+    "body": {
+      "inputs": {
+      },
+      "response_mode": "streaming",
+      "user": "dify-workflow-trigger"
+    }
+  }
 ]
 ```
