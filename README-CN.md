@@ -54,7 +54,7 @@ docker run --name dify-workflow-trigger \
    {
       "name": "test1",
       "cron": "TZ=Asia/Shanghai 0 0 18 * * *",
-      "url": "https://dify.itning.cn/v1/workflows/run",
+      "url": "http://your-dify-domain/api/v1/workflows/run",
       "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
       "body": {
          "inputs": {
@@ -66,7 +66,7 @@ docker run --name dify-workflow-trigger \
    {
       "name": "test2",
       "cron": "TZ=Asia/Shanghai 0 30 8 * * *",
-      "url": "https://dify.itning.cn/v1/workflows/run",
+      "url": "http://your-dify-domain/v1/workflows/run",
       "token": "app-LoFN2hiaYCMfTIhN8yCDmWmo",
       "body": {
          "inputs": {
@@ -77,3 +77,12 @@ docker run --name dify-workflow-trigger \
    }
 ]
 ```
+cron 使用库 [go-co-op/gocron](https://pkg.go.dev/github.com/go-co-op/gocron/v2#CronJob)
+
+支持秒级定时: 秒 分 时 日 月 星期
+
+example:
+- `TZ=Asia/Shanghai 0 0 18 * * *` 每天18:00执行 (时区: Asia/Shanghai)
+- `TZ=Asia/Shanghai 0 30 8 * * *` 每天18:30执行 (时区: Asia/Shanghai)
+- `0 0 18 * * *` 每天18:00执行 (默认时区)
+- `*/5 * * * * *` 每5秒执行 (默认时区)

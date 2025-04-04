@@ -2,7 +2,7 @@
   {
     "name": "test1",
     "cron": "TZ=Asia/Shanghai 0 0 18 * * *",
-    "url": "https://dify.itning.cn/v1/workflows/run",
+    "url": "http://your-dify-domain/api/v1/workflows/run",
     "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
     "body": {
       "inputs": {
@@ -14,7 +14,7 @@
   {
     "name": "test2",
     "cron": "TZ=Asia/Shanghai 0 30 8 * * *",
-    "url": "https://dify.itning.cn/v1/workflows/run",
+    "url": "http://your-dify-domain/v1/workflows/run",
     "token": "app-LoFN2hiaYCMfTIhN8yCDmWmo",
     "body": {
       "inputs": {

@@ -56,7 +56,7 @@ docker run --name dify-workflow-trigger \
    {
       "name": "test1",
       "cron": "TZ=Asia/Shanghai 0 0 18 * * *",
-      "url": "https://dify.itning.cn/v1/workflows/run",
+      "url": "http://your-dify-domain/api/v1/workflows/run",
       "token": "app-FZ8vjeH74tUBtRYNUjFx65aw",
       "body": {
          "inputs": {
@@ -68,7 +68,7 @@ docker run --name dify-workflow-trigger \
    {
       "name": "test2",
       "cron": "TZ=Asia/Shanghai 0 30 8 * * *",
-      "url": "https://dify.itning.cn/v1/workflows/run",
+      "url": "http://your-dify-domain/v1/workflows/run",
       "token": "app-LoFN2hiaYCMfTIhN8yCDmWmo",
       "body": {
          "inputs": {
@@ -78,5 +78,13 @@ docker run --name dify-workflow-trigger \
       }
    }
 ]
-
 ```
+cron use [go-co-op/gocron](https://pkg.go.dev/github.com/go-co-op/gocron/v2#CronJob) 
+
+support seconds level scheduling: Seconds Minutes Hours Day-of-Month Month Day-of-Week
+
+example:
+- `TZ=Asia/Shanghai 0 0 18 * * *` run at 18:00 every day (timezone: Asia/Shanghai)
+- `TZ=Asia/Shanghai 0 30 8 * * *` run at 18:30 every day (timezone: Asia/Shanghai)
+- `0 0 18 * * *` run at 18:00 every day (default timezone)
+- `*/5 * * * * *` run every 5 seconds (default timezone)
