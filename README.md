@@ -43,6 +43,8 @@ Supports multiple tasks with different schedules invoking different workflows.
 
 ## Using Docker
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/itning/dify-workflow-trigger.svg?style=flat&label=pulls&logo=docker)](https://hub.docker.com/r/itning/dify-workflow-trigger/tags?page=1&ordering=last_updated)
+
 ```shell
 docker run --name dify-workflow-trigger \
     -v /path/to/config.json:/app/config.json \
