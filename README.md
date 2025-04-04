@@ -21,6 +21,8 @@
 
 ---
 
+[中文](https://github.com/itning/dify-workflow-trigger/blob/main/README-CN.md)
+
 # Introduction
 
 Supports triggering Dify workflow execution via CRON scheduled tasks.
