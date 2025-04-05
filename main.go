@@ -25,6 +25,7 @@ type Config struct {
 	Token string `json:"token"`
 	Body  Body   `json:"body"`
 }
+
 type Body struct {
 	Inputs       map[string]interface{} `json:"inputs"`
 	ResponseMode string                 `json:"response_mode"`
@@ -44,7 +45,7 @@ type AppContext struct {
 func (c *AppContext) Init() {
 	s, err := gocron.NewScheduler()
 	if err != nil {
-		log.Println("Create scheduler failed:", err)
+		log.Fatalf("Create scheduler failed: %v", err)
 		return
 	}
 	c.Scheduler = s
@@ -57,7 +58,7 @@ func (c *AppContext) Start() {
 func (c *AppContext) Shutdown() {
 	err := c.Scheduler.Shutdown()
 	if err != nil {
-		log.Println("Shutdown scheduler failed:", err)
+		log.Printf("Shutdown scheduler failed: %v", err)
 		return
 	}
 	log.Println("Scheduler shutdown")
@@ -83,7 +84,7 @@ func (c *AppContext) New(task Task) {
 		),
 	)
 	if err != nil {
-		log.Println("Create job failed:", err)
+		log.Fatalf("[][%s] Create job failed: %v", task.Config.Name, err)
 		return
 	}
 	task.job = j
@@ -95,7 +96,7 @@ func (t *Task) Execution() {
 	defer cancel()
 	jsonBytes, err := json.Marshal(t.Config.Body)
 	if err != nil {
-		log.Println("Error:", err)
+		log.Printf("[%s][%s] Failed to parse the request body: %v", t.job.ID(), t.Config.Name, err)
 		return
 	}
 	reqBody := bytes.NewBuffer(jsonBytes)
@@ -105,19 +106,18 @@ func (t *Task) Execution() {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("Error:", err)
+		log.Printf("[%s][%s] Request failed: %v", t.job.ID(), t.Config.Name, err)
 		return
 	}
 	defer res.Body.Close()
 	mediaType, _, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
 	if err != nil {
-		log.Println("Failed to parse Content-Type:", err)
-		return
+		log.Printf("[%s][%s] Failed to parse Content-Type [%s] %v", t.job.ID(), t.Config.Name, res.Header.Get("Content-Type"), err)
 	}
 	if mediaType == "text/event-stream" {
-		for ev, err := range sse.Read(res.Body, nil) {
+		for ev, err := range sse.Read(res.Body, &sse.ReadConfig{MaxEventSize: 1024 * 1024}) {
 			if err != nil {
-				log.Println("Error:", err)
+				log.Printf("[%s][%s] SSE Error: %v", t.job.ID(), t.Config.Name, err)
 				break
 			}
 			log.Printf("[%s][%s] %s", t.job.ID(), t.Config.Name, ev.Data)
@@ -125,7 +125,7 @@ func (t *Task) Execution() {
 	} else {
 		bodyBytes, err := io.ReadAll(res.Body)
 		if err != nil {
-			log.Printf("Failed to read response body: %v", err)
+			log.Printf("[%s][%s] Failed to read response body: %v", t.job.ID(), t.Config.Name, err)
 			return
 		}
 		log.Printf("[%s][%s] %s", t.job.ID(), t.Config.Name, bodyBytes)
@@ -142,7 +142,7 @@ func ParseConfigurationFiles(configFilePath string) []Config {
 
 	fileInfo, err := file.Stat()
 	if err != nil {
-		log.Println("Can not read file content:", err)
+		log.Printf("Can not read file content: %v", err)
 		return nil
 	}
 	fileSize := fileInfo.Size()
@@ -150,14 +150,14 @@ func ParseConfigurationFiles(configFilePath string) []Config {
 
 	_, err = file.Read(data)
 	if err != nil {
-		log.Println("Read file failed:", err)
+		log.Printf("Read file failed: %v", err)
 		return nil
 	}
 
 	var configs []Config
 	err = json.Unmarshal(data, &configs)
 	if err != nil {
-		log.Println("JSON analysis failed:", err)
+		log.Printf("JSON analysis failed: %v", err)
 		return nil
 	}
 
@@ -167,7 +167,7 @@ func ParseConfigurationFiles(configFilePath string) []Config {
 func GetConfigPath() string {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		log.Println("Unable to get the current directory:", err)
+		log.Printf("Unable to get the current directory: %v", err)
 		return ""
 	}
 	return filepath.Join(currentDir, "config.json")
@@ -180,8 +180,8 @@ func main() {
 
 	configFile := *configFilePtr
 	if configFile == "" {
-		log.Println("Configuration file path is required")
-		os.Exit(1)
+		log.Fatalf("Configuration file path is required")
+		return
 	}
 	configs := ParseConfigurationFiles(configFile)
 	if configs == nil {
