@@ -14,6 +14,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -v -o /usr/local/bin/app ./...
+RUN go build -v -o /usr/local/bin/dify-workflow-trigger ./...
 
-CMD ["app", "--config", "/app/config.json"]
+CMD ["dify-workflow-trigger", "--config", "/app/config.json"]
