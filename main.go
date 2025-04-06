@@ -15,7 +15,9 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"syscall"
+	"time"
 )
 
 type Config struct {
@@ -42,6 +44,13 @@ type AppContext struct {
 	Scheduler gocron.Scheduler
 }
 
+func (c *Config) ConfigsEqual(newConfig Config) bool {
+	return c.Cron == newConfig.Cron &&
+		c.URL == newConfig.URL &&
+		c.Token == newConfig.Token &&
+		reflect.DeepEqual(c.Body, newConfig.Body)
+}
+
 func (c *AppContext) Init() {
 	s, err := gocron.NewScheduler()
 	if err != nil {
@@ -55,6 +64,19 @@ func (c *AppContext) Start() {
 	c.Scheduler.Start()
 }
 
+func (c *AppContext) RemoveJob(task Task) {
+	err := c.Scheduler.RemoveJob(task.job.ID())
+	if err != nil {
+		log.Printf("Remove job failed: %v", err)
+	}
+	for i, t := range c.Tasks {
+		if t.job.ID() == task.job.ID() {
+			c.Tasks = append(c.Tasks[:i], c.Tasks[i+1:]...)
+			break
+		}
+	}
+}
+
 func (c *AppContext) Shutdown() {
 	err := c.Scheduler.Shutdown()
 	if err != nil {
@@ -64,7 +86,34 @@ func (c *AppContext) Shutdown() {
 	log.Println("Scheduler shutdown")
 }
 
-func (c *AppContext) New(task Task) {
+func (c *AppContext) Update(task *Task) {
+	j, err := (c.Scheduler).Update(
+		task.job.ID(),
+		gocron.CronJob(task.Config.Cron, true),
+		gocron.NewTask(task.Execution),
+		gocron.WithName(task.Config.Name),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
+		gocron.WithEventListeners(
+			gocron.BeforeJobRuns(
+				func(jobID uuid.UUID, jobName string) {
+					log.Printf("[%s][%s] Job started", jobID, jobName)
+				},
+			),
+			gocron.AfterJobRuns(
+				func(jobID uuid.UUID, jobName string) {
+					log.Printf("[%s][%s] Job finished", jobID, jobName)
+				},
+			),
+		),
+	)
+	if err != nil {
+		log.Fatalf("[][%s] Update job failed: %v", task.Config.Name, err)
+		return
+	}
+	task.job = j
+}
+
+func (c *AppContext) New(task *Task) {
 	j, err := (c.Scheduler).NewJob(
 		gocron.CronJob(task.Config.Cron, true),
 		gocron.NewTask(task.Execution),
@@ -88,7 +137,7 @@ func (c *AppContext) New(task Task) {
 		return
 	}
 	task.job = j
-	c.Tasks = append(c.Tasks, task)
+	c.Tasks = append(c.Tasks, *task)
 }
 
 func (t *Task) Execution() {
@@ -161,6 +210,15 @@ func ParseConfigurationFiles(configFilePath string) []Config {
 		return nil
 	}
 
+	for i, config := range configs {
+		for j, otherConfig := range configs {
+			if i != j && config.Name == otherConfig.Name {
+				log.Printf("Duplicate name found: %s", config.Name)
+				return nil
+			}
+		}
+	}
+
 	return configs
 }
 
@@ -173,14 +231,96 @@ func GetConfigPath() string {
 	return filepath.Join(currentDir, "config.json")
 }
 
+func CompareConfigs(oldConfigs, newConfigs []Config) (added, removed, updated []Config) {
+	oldMap := make(map[string]Config)
+	newMap := make(map[string]Config)
+
+	for _, config := range oldConfigs {
+		oldMap[config.Name] = config
+	}
+
+	for _, config := range newConfigs {
+		newMap[config.Name] = config
+	}
+
+	for name, newConfig := range newMap {
+		if _, exists := oldMap[name]; !exists {
+			added = append(added, newConfig)
+		} else {
+			oldConfig := oldMap[name]
+			if !oldConfig.ConfigsEqual(newConfig) {
+				updated = append(updated, newConfig)
+			}
+		}
+	}
+
+	for name, oldConfig := range oldMap {
+		if _, exists := newMap[name]; !exists {
+			removed = append(removed, oldConfig)
+		}
+	}
+
+	return added, removed, updated
+}
+
+func RefreshConfig(appContext AppContext, configFile string) {
+	configs := ParseConfigurationFiles(configFile)
+	if configs == nil {
+		return
+	}
+	var oldConfigs []Config
+	for _, task := range appContext.Tasks {
+		oldConfigs = append(oldConfigs, task.Config)
+	}
+	added, removed, updated := CompareConfigs(oldConfigs, configs)
+	if len(added) > 0 || len(removed) > 0 || len(updated) > 0 {
+		log.Printf("Configuration changed")
+		for _, config := range removed {
+			for _, task := range appContext.Tasks {
+				if task.Config.Name == config.Name {
+					log.Printf("Removing job: %s", config.Name)
+					appContext.RemoveJob(task)
+				}
+			}
+		}
+		for _, config := range updated {
+			for i, task := range appContext.Tasks {
+				if task.Config.Name == config.Name {
+					log.Printf("Updating job: %s", config.Name)
+					appContext.Tasks[i].Config = config
+					appContext.Update(&appContext.Tasks[i])
+					t, _ := appContext.Tasks[i].job.NextRun()
+					log.Printf("Updated job: Id [%s] Name [%s] NextRunTime [%s]", appContext.Tasks[i].job.ID(), appContext.Tasks[i].Config.Name, t)
+					break
+				}
+			}
+		}
+		for _, config := range added {
+			log.Printf("Creating job: %s", config.Name)
+			task := &Task{Config: config}
+			appContext.New(task)
+			t, _ := task.job.NextRun()
+			log.Printf("Created job: Id [%s] Name [%s] NextRunTime [%s]", task.job.ID(), task.job.Name(), t)
+		}
+	}
+}
+
 func main() {
 	configFilePtr := flag.String("config", GetConfigPath(), "path to the configuration file")
+	refreshIntervalPtr := flag.Int("refresh-interval", 5, "interval in seconds to refresh the configuration file")
 
 	flag.Parse()
 
 	configFile := *configFilePtr
+	refreshInterval := *refreshIntervalPtr
+	log.Printf("Configuration file path: %s", configFile)
+	log.Printf("Refresh interval: %d seconds", refreshInterval)
 	if configFile == "" {
 		log.Fatalf("Configuration file path is required")
+		return
+	}
+	if refreshInterval <= 0 {
+		log.Fatalf("Refresh interval must be greater than 0")
 		return
 	}
 	configs := ParseConfigurationFiles(configFile)
@@ -191,13 +331,25 @@ func main() {
 	appContext.Init()
 
 	for _, config := range configs {
-		appContext.New(Task{Config: config})
+		appContext.New(&Task{Config: config})
 	}
 	appContext.Start()
 
 	for _, task := range appContext.Tasks {
 		t, _ := task.job.NextRun()
 		log.Printf("Created job: Id [%s] Name [%s] NextRunTime [%s]", task.job.ID(), task.job.Name(), t)
+	}
+
+	_, err := appContext.Scheduler.NewJob(gocron.DurationJob(time.Duration(refreshInterval)*time.Second),
+		gocron.NewTask(func() {
+			RefreshConfig(appContext, configFile)
+		}),
+		gocron.WithName("RefreshConfig"),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule))
+
+	if err != nil {
+		log.Fatalf("Create RefreshConfig job failed: %v", err)
+		return
 	}
 
 	signalChan := make(chan os.Signal, 1)
