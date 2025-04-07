@@ -263,7 +263,7 @@ func CompareConfigs(oldConfigs, newConfigs []Config) (added, removed, updated []
 	return added, removed, updated
 }
 
-func RefreshConfig(appContext AppContext, configFile string) {
+func RefreshConfig(appContext *AppContext, configFile string) {
 	configs := ParseConfigurationFiles(configFile)
 	if configs == nil {
 		return
@@ -340,9 +340,9 @@ func main() {
 		log.Printf("Created job: Id [%s] Name [%s] NextRunTime [%s]", task.job.ID(), task.job.Name(), t)
 	}
 
-	_, err := appContext.Scheduler.NewJob(gocron.DurationJob(time.Duration(refreshInterval)*time.Second),
+	_, err := appContext.Scheduler.NewJob(gocron.DurationJob(time.Duration(*refreshIntervalPtr)*time.Second),
 		gocron.NewTask(func() {
-			RefreshConfig(appContext, configFile)
+			RefreshConfig(&appContext, configFile)
 		}),
 		gocron.WithName("RefreshConfig"),
 		gocron.WithSingletonMode(gocron.LimitModeReschedule))
