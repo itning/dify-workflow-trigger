@@ -63,7 +63,7 @@ docker run --name dify-workflow-trigger \
       "body": {
          "inputs": {
          },
-         "response_mode": "streaming",
+         "response_mode": "blocking",
          "user": "dify-workflow-trigger"
       }
    },
