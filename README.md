@@ -1,6 +1,6 @@
-<h3 align="center">Dify Workflow Trigger</h3>
+<h3 align="center"><img src="pic/logo.png" alt="Logo" style="width:25%;"></h3>
 <div align="center">
-
+    
 [![GitHub stars](https://img.shields.io/github/stars/itning/dify-workflow-trigger.svg?style=social&label=Stars)](https://github.com/itning/dify-workflow-trigger/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/itning/dify-workflow-trigger.svg?style=social&label=Fork)](https://github.com/itning/dify-workflow-trigger/network/members)
 [![GitHub watchers](https://img.shields.io/github/watchers/itning/dify-workflow-trigger.svg?style=social&label=Watch)](https://github.com/itning/dify-workflow-trigger/watchers)
@@ -20,6 +20,8 @@
 </div>
 
 ---
+
+Dify Workflow Trigger
 
 [中文](https://github.com/itning/dify-workflow-trigger/blob/main/README-CN.md)
 
