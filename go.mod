@@ -1,6 +1,6 @@
 module dify-workflow-trigger
 
-go 1.24.3
+go 1.25.0
 
 require (
 	github.com/go-co-op/gocron/v2 v2.16.1 // indirect
