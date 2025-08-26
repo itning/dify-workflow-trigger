@@ -65,7 +65,8 @@ docker run --name dify-workflow-trigger \
          },
          "response_mode": "blocking",
          "user": "dify-workflow-trigger"
-      }
+      },
+      "barkNotifyUrlOnFailed": ""
    },
    {
       "name": "test2",
@@ -81,6 +82,10 @@ docker run --name dify-workflow-trigger \
    }
 ]
 ```
+对于 `barkNotifyUrlOnFailed` 当task失败时你可以使用 [Bark](https://github.com/Finb/Bark) 进行通知.
+
+配置例子: `"barkNotifyUrlOnFailed": "https://api.day.app/your-bark-token"`
+
 cron 使用库 [go-co-op/gocron](https://pkg.go.dev/github.com/go-co-op/gocron/v2#CronJob)
 
 支持秒级定时: 秒 分 时 日 月 星期

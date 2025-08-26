@@ -67,7 +67,8 @@ docker run --name dify-workflow-trigger \
          },
          "response_mode": "blocking",
          "user": "dify-workflow-trigger"
-      }
+      },
+      "barkNotifyUrlOnFailed": ""
    },
    {
       "name": "test2",
@@ -83,6 +84,10 @@ docker run --name dify-workflow-trigger \
    }
 ]
 ```
+for `barkNotifyUrlOnFailed` you can use [Bark](https://github.com/Finb/Bark) to notify you when the task fails.
+
+config example: `"barkNotifyUrlOnFailed": "https://api.day.app/your-bark-token"`
+
 cron use [go-co-op/gocron](https://pkg.go.dev/github.com/go-co-op/gocron/v2#CronJob) 
 
 support seconds level scheduling: Seconds Minutes Hours Day-of-Month Month Day-of-Week

@@ -1,4 +1,4 @@
-FROM golang:1.24.3
+FROM golang:1.25.0
 
 LABEL org.opencontainers.image.documentation="https://github.com/itning/dify-workflow-trigger/blob/main/README.md"
 LABEL org.opencontainers.image.authors="itning"

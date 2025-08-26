@@ -5,27 +5,31 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"github.com/go-co-op/gocron/v2"
-	"github.com/google/uuid"
-	"github.com/tmaxmax/go-sse"
+	"fmt"
 	"io"
 	"log"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"reflect"
 	"syscall"
 	"time"
+
+	"github.com/go-co-op/gocron/v2"
+	"github.com/google/uuid"
+	"github.com/tmaxmax/go-sse"
 )
 
 type Config struct {
-	Name  string `json:"name"`
-	Cron  string `json:"cron"`
-	URL   string `json:"url"`
-	Token string `json:"token"`
-	Body  Body   `json:"body"`
+	Name                  string `json:"name"`
+	Cron                  string `json:"cron"`
+	URL                   string `json:"url"`
+	Token                 string `json:"token"`
+	Body                  Body   `json:"body"`
+	BarkNotifyUrlOnFailed string `json:"barkNotifyUrlOnFailed,omitempty"`
 }
 
 type Body struct {
@@ -146,6 +150,7 @@ func (t *Task) Execution() {
 	jsonBytes, err := json.Marshal(t.Config.Body)
 	if err != nil {
 		log.Printf("[%s][%s] Failed to parse the request body: %v", t.job.ID(), t.Config.Name, err)
+		t.NotifyOnFailure("Failed to parse the request body", err.Error())
 		return
 	}
 	reqBody := bytes.NewBuffer(jsonBytes)
@@ -156,17 +161,20 @@ func (t *Task) Execution() {
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("[%s][%s] Request failed: %v", t.job.ID(), t.Config.Name, err)
+		t.NotifyOnFailure("Request failed", err.Error())
 		return
 	}
 	defer res.Body.Close()
 	mediaType, _, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
 	if err != nil {
 		log.Printf("[%s][%s] Failed to parse Content-Type [%s] %v", t.job.ID(), t.Config.Name, res.Header.Get("Content-Type"), err)
+		t.NotifyOnFailure("Failed to parse Content-Type", err.Error())
 	}
 	if mediaType == "text/event-stream" {
 		for ev, err := range sse.Read(res.Body, &sse.ReadConfig{MaxEventSize: 1024 * 1024}) {
 			if err != nil {
 				log.Printf("[%s][%s] SSE Error: %v", t.job.ID(), t.Config.Name, err)
+				t.NotifyOnFailure("SSE Error", err.Error())
 				break
 			}
 			log.Printf("[%s][%s] %s", t.job.ID(), t.Config.Name, ev.Data)
@@ -175,9 +183,50 @@ func (t *Task) Execution() {
 		bodyBytes, err := io.ReadAll(res.Body)
 		if err != nil {
 			log.Printf("[%s][%s] Failed to read response body: %v", t.job.ID(), t.Config.Name, err)
+			t.NotifyOnFailure("Failed to read response body", err.Error())
 			return
 		}
 		log.Printf("[%s][%s] %s", t.job.ID(), t.Config.Name, bodyBytes)
+	}
+}
+
+// NotifyOnFailure sends a notification to the Bark URL when a task fails
+func (t *Task) NotifyOnFailure(title, content string) {
+	if t.Config.BarkNotifyUrlOnFailed == "" {
+		return
+	}
+
+	// Validate the URL
+	_, err := url.ParseRequestURI(t.Config.BarkNotifyUrlOnFailed)
+	if err != nil {
+		log.Printf("[%s][%s] Invalid Bark notification URL: %v", t.job.ID(), t.Config.Name, err)
+		return
+	}
+
+	// URL encode the title and content
+	title = url.QueryEscape(title)
+	content = url.QueryEscape(content)
+
+	notifyUrl := fmt.Sprintf("%s/%s/%s", t.Config.BarkNotifyUrlOnFailed, title, content)
+
+	// Send GET request
+	resp, err := http.Get(notifyUrl)
+	if err != nil {
+		log.Printf("[%s][%s] Failed to send notification: %v", t.job.ID(), t.Config.Name, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("[%s][%s] Failed to read notification response body: %v", t.job.ID(), t.Config.Name, err)
+	} else {
+		bodyString := string(bodyBytes)
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("[%s][%s] Notification request returned status: %d, response: %s", t.job.ID(), t.Config.Name, resp.StatusCode, bodyString)
+		} else {
+			log.Printf("[%s][%s] Notification sent successfully, response: %s", t.job.ID(), t.Config.Name, bodyString)
+		}
 	}
 }
 

@@ -9,7 +9,8 @@
       },
       "response_mode": "blocking",
       "user": "dify-workflow-trigger"
-    }
+    },
+    "barkNotifyUrlOnFailed": ""
   },
   {
     "name": "test2",
